@@ -1,0 +1,6 @@
+# created by virtualenv automatically
+*notion*.md
+*save*.json
+_pycache_/
+venv/
+*.log
