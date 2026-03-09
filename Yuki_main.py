@@ -5,6 +5,7 @@ from default_config import ( #初始人设
     YUKI_STATS, #数值规则
     SYSTEM_CONFIG #系统配置
 )
+from Events import Trigger
 
 
 # 存档读写
@@ -43,7 +44,11 @@ def init_save():
         "yuki_core": {
             "basic": {
                 "name": "Yuki",
-                "current_personality": "default"
+                "current_personality":{
+                    "default":True,
+                    "dilei":False,
+                    "gentle":False,
+                    ""
             },
             "stats": {
                 "affection": init_stats["affection"],
@@ -208,10 +213,7 @@ def chat_with_yuki():
         # 4.3 信任值(最大100)
         save_data['yuki_core']["stats"]["trust"] +=trust_change
         save_data["yuki_core"]["stats"]["trust"]= min(save_data["yuki_core"]["stats"]["trust"],100)
-        # 4.4 事件解锁
-        current_affection = save_data["yuki_core"]["stats"]["affection"]
-        current_mood = save_data["yuki_core"]["stats"]["mood"]
-        current_trust = save_data["yuki_core"]["stats"]["trust"]
+
 
         # 5.添加聊天记录到存档
         new_chat = {
@@ -232,15 +234,7 @@ def chat_with_yuki():
         print(f"<心情{mood_change:+d}>,当前心情:{save_data["yuki_core"]["stats"]["mood"]}")
         print(f"<信任度{trust_change:+d}>,当前信任度:{save_data["yuki_core"]["stats"]["trust"]}")
 
-        for event in YUKI_STATS["event_trigger"]:
-            event_name = event["event_name"]
-            # 跳过已解锁的事件
-            if event_name in save_data["yuki_core"]["stats"]["unlocked_events"] :
-                continue
-            #检查是否满足条件
-            if current_affection >= event["affection_min"] and current_mood >= event["mood_min"] and current_trust >= event["trust_min"]:
-                save_data["yuki_core"]["stats"]["unlocked_events"].append(event_name)
-                print(f'\n解锁新事件:{event_name}')
+        Trigger.event_trigger(save_data)
         # 自动存档
         if SYSTEM_CONFIG["auto_save"]:
             save_save(save_data)
