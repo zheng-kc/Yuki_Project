@@ -6,6 +6,7 @@ from default_config import ( #初始人设
     SYSTEM_CONFIG #系统配置
 )
 from Events import Trigger
+from utils import parse_emotion_change
 
 
 # 存档读写
@@ -48,15 +49,16 @@ def init_save():
                     "default":True,
                     "dilei":False,
                     "gentle":False,
-                    ""
+                    "disease_prone":False,
+                    "low":False
             },
             "stats": {
                 "affection": init_stats["affection"],
-                "mood": init_stats["mood"],
                 "trust": init_stats["trust"],
                 "unlocked_events": []
             },
             "current_state": {
+                "mood": init_stats["mood"],
                 "mood_tag": "happy",
                 "action_tag": "idle"
             }
@@ -196,22 +198,22 @@ def chat_with_yuki():
             print("Yuki：哥哥下次要早点回来陪我哦～🥺")
             save_save(save_data)
             break
+
         # 3.生成回复和数值变化
         yuki_response = get_yuki_reply(user_input)
         reply = yuki_response['reply']
-        affection_change = yuki_response['affection_change']
-        mood_change = yuki_response['mood_change']
-        trust_change = yuki_response["trust_change"]
+        aff_change,tru_change = parse_emotion_change(ai_response)
+
         # 4.更新数值
         # 4.1 好感度(数值改变，变化范围)
-        save_data["yuki_core"]["stats"]["affection"] += affection_change
+        save_data["yuki_core"]["stats"]["affection"] += aff_change
         save_data["yuki_core"]["stats"]["affection"] = max(0,min(save_data["yuki_core"]["stats"]["affection"],YUKI_STATS["limit"]["affection_max"]))
         #max(0下限,min(input,limits上限))
         # 4.2 心情值(0-100)
-        save_data["yuki_core"]["stats"]["mood"] += mood_change
-        save_data["yuki_core"]["stats"]["mood"] = max(0,min(save_data["yuki_core"]["stats"]["mood"],100))
+        save_data["yuki_core"]["current_state"]["mood"] += mood_change
+        save_data["yuki_core"]["current_state"]["mood"] = max(0,min(save_data["yuki_core"]["stats"]["mood"],100))
         # 4.3 信任值(最大100)
-        save_data['yuki_core']["stats"]["trust"] +=trust_change
+        save_data['yuki_core']["stats"]["trust"] +=tru_change
         save_data["yuki_core"]["stats"]["trust"]= min(save_data["yuki_core"]["stats"]["trust"],100)
 
 
@@ -221,8 +223,8 @@ def chat_with_yuki():
             "user_input":user_input,
             "yuki_reply":reply,
             "stats_change":{
-                "affection":affection_change,
-                "mood":mood_change
+                "affection":aff_change,
+                "trust":tru_change
             }
         }
         save_data["interaction"]["chat_history"].append(new_chat)
@@ -230,9 +232,9 @@ def chat_with_yuki():
         save_data["player_info"]["total_chat_times"] +=1
         # 7.打印Yuki回复
         print(f'Yuki:{reply}')
-        print(f"<好感度{affection_change:+d}>,当前好感度:{save_data["yuki_core"]["stats"]["affection"]}")
-        print(f"<心情{mood_change:+d}>,当前心情:{save_data["yuki_core"]["stats"]["mood"]}")
-        print(f"<信任度{trust_change:+d}>,当前信任度:{save_data["yuki_core"]["stats"]["trust"]}")
+        print(f"<好感度{aff_change:+d}>,当前好感度:{save_data["yuki_core"]["stats"]["affection"]}")
+        print(f"<心情{mood_change:+d}>,当前心情:{save_data["yuki_core"]["current_state"]["mood"]}")
+        print(f"<信任度{tru_change:+d}>,当前信任度:{save_data["yuki_core"]["stats"]["trust"]}")
 
         Trigger.event_trigger(save_data)
         # 自动存档
