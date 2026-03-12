@@ -27,7 +27,7 @@ class Trigger:
         for persona in YUKI_CHARACTER["personality"]:
             if self.save_data["yuki_core"]["basic"]["current_personality"][persona]:
                 continue
-            if
+            if current_affection
 
 
     def diary_leak_trigger(self):#偷看日记事件触发
