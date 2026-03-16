@@ -14,10 +14,7 @@ load_dotenv()
 
 class AIClient:
     def __init__(self,mode="local"):
-        #本地大模型调用
         self.mode = mode
-        self.ollama_url = "http://localhost:11434"
-        self.ollama_model = "deepseek-r1:7b"
         #线上API调用
         self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
         self.online_client = OpenAI(
@@ -25,6 +22,13 @@ class AIClient:
             base_url = "https://api.deepseek.com",
             timeout = 60
         ) if self.deepseek_api_key else None
+        # 本地大模型调用(复用Openai的SDK)
+        self.local_client = OpenAI(
+            api_key = "ollama",
+            base_url = "http://localhost/11434/v1",
+            timeout = 120
+        )
+
 
     def change_mode(self,mode):
         """切换本地/线上模式"""
@@ -35,37 +39,69 @@ class AIClient:
 
     def chat(self,messages,model = None, stream = False):
         """聊天接口统一"""
-        if self.mode == "local":
-            return self.call_local(messages,model,stream)
-        else:
-            return self.call_online(messages,model,stream)
+        client = self.local_client if self.mode == "local" else self.online_client
+        model = model or ("deepseek-r1:7b" if self.mode == "local" else "deepseek-chat")
 
-    def call_local(self,messages,model='deepseek-r1:7b',stream=False):
-        """调用本地模型Ollama"""
-        """ollama的HTTP请求体Payload"""
         try:
-            payload = {
-                "model":model,
-                "messages":messages,
-                "stream":stream
-            }
-            response = requests.post(
-                f"{self.ollama_url}/api/chat",
-                json=payload,
-                timeout=120
+            response = client.chat.completions.create(
+                model = model,
+                messages = messages,
+                stream = stream,
+                temperature = 0.7
             )
-            response.raise_for_status()
-            result = response.json()
-            return result['message']['content']
-        except requests.exceptions.ConnectionError:
-            return "本地部署未启动，运行Ollama serve"
+
+            # 流式处理,实现打字机效果
+            if stream:
+                def stream_gen():# 定义生成器函数
+                    for chunk in response:
+                        if chunk.choice[0].delta.content:
+                            yield chunk.choice[0].delta.content
+                return stream_gen()
+            else:
+                return response.choices[0].message.content
+
+        except APITimeoutError:
+            return "请求超时"
+        except APIError as e:
+            return f"API错误:{e.message}"
         except Exception as e:
-            return f"本地模型错误:{str(e)}"
+            return f"错误:{str(e)}"
 
-    def call_online(self, messages, model="deepseek-chat", stream=False):
-        """调用线上 DeepSeek（推荐用 SDK）"""
-        if not self.online_client:
+    '''def mock_chat(self):
+        # 测试函数，先使用伪AI回复，测试JSON读写是否正常
+        """
+            接收用户输入，返回Yuki的回复 + 数值变化
+            （先写简化版，后续替换成真实AI接口）
+            """
+        # 1. 定义简单的关键词匹配（模拟AI逻辑）
+        if "可爱" in user_input or "好看" in user_input:
+            reply = "谢谢哥哥的夸奖😘，Yuki超开心的！"
+            affection_change = YUKI_STATS["change_rule"]["praise"]  # 从配置读+5
+            mood_change = 3
+            trust_change = 5
+        elif "其他女生" in user_input or "别的妹妹" in user_input:
+            reply = "呜😭...哥哥是不是不喜欢Yuki了？不准提别的女生！"
+            affection_change = YUKI_STATS["change_rule"]["mention_other_girl"]  # 从配置读-10
+            mood_change = -10
+            trust_change = -10
+        elif "吃饭" in user_input or "吃什么" in user_input:
+            reply = "Yuki想和哥哥一起吃草莓蛋糕～🍰"
+            affection_change = YUKI_STATS["change_rule"]["chat"]  # 从配置读+1
+            mood_change = 2
+            trust_change = 3
+        else:
+            reply = "哥哥说的话Yuki不太懂～但会乖乖听的✨"
+            affection_change = YUKI_STATS["change_rule"]["chat"]  # 从配置读+1
+            mood_change = 0
+            trust_change = 0
 
+        # 2. 返回回复和数值变化
+        return {
+            "reply": reply,
+            "affection_change": affection_change,
+            "mood_change": mood_change,
+            "trust_change": trust_change
+        }'''
 
 
 
