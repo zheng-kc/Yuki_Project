@@ -138,41 +138,7 @@ def collect_user_information(save_data):
 
 
 # 核心功能函数，生成回复
-def get_yuki_reply(user_input):
-    # 测试函数，先使用伪AI回复，测试JSON读写是否正常
-    """
-        接收用户输入，返回Yuki的回复 + 数值变化
-        （先写简化版，后续替换成真实AI接口）
-        """
-    # 1. 定义简单的关键词匹配（模拟AI逻辑）
-    if "可爱" in user_input or "好看" in user_input:
-        reply = "谢谢哥哥的夸奖😘，Yuki超开心的！"
-        affection_change = YUKI_STATS["change_rule"]["praise"]  # 从配置读+5
-        mood_change = 3
-        trust_change = 5
-    elif "其他女生" in user_input or "别的妹妹" in user_input:
-        reply = "呜😭...哥哥是不是不喜欢Yuki了？不准提别的女生！"
-        affection_change = YUKI_STATS["change_rule"]["mention_other_girl"]  # 从配置读-10
-        mood_change = -10
-        trust_change = -10
-    elif "吃饭" in user_input or "吃什么" in user_input:
-        reply = "Yuki想和哥哥一起吃草莓蛋糕～🍰"
-        affection_change = YUKI_STATS["change_rule"]["chat"]  # 从配置读+1
-        mood_change = 2
-        trust_change = 3
-    else:
-        reply = "哥哥说的话Yuki不太懂～但会乖乖听的✨"
-        affection_change = YUKI_STATS["change_rule"]["chat"]  # 从配置读+1
-        mood_change = 0
-        trust_change = 0
 
-    # 2. 返回回复和数值变化
-    return {
-        "reply": reply,
-        "affection_change": affection_change,
-        "mood_change": mood_change,
-        "trust_change": trust_change
-    }
 
 #定义聊天主逻辑,核心运行函数
 def chat_with_yuki():
