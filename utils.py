@@ -33,6 +33,7 @@ def build_messages(save_data,max_context = 10):
             current_personality = persona
     system_prompt = f"""
     你的人设信息：{PERSONALITY_PROMPTS[current_personality]}
+    用户信息: 姓名：{save_data["player_info"]["name"]},性别关系:{save_data["player_info"]["gender"]},身份:{save_data["player_info"]["identity"]},生日:{save_data["player_info"]["birthday"]}
     当前好感度:{save_data["yuki_core"]["stats"]["affection"]}
     当前信任值:{save_data["yuki_core"]["stats"]["trust"]}
     当前心情：{save_data["yuki_core"]["current_state"]["mood_tag"]},心情数值为{save_data["yuki_core"]["stats"]["mood"]}
@@ -51,4 +52,14 @@ def build_messages(save_data,max_context = 10):
 """.strip()
     messages = [
         {"role":"system","content":system_prompt},
-    ]
+]
+    chat_history = save_data["interaction"]["chat_history"]
+    memory = chat_history[-max_context:] if chat_history else []
+    # 将memory加入messages
+    for chat in memory:
+        user_msg = chat["user_input"]
+        yuki_msg = chat["yuki_reply"]
+        messages.append({"role":"user","content":user_msg})
+        messages.append({"role":"assistant","content":yuki_msg})
+    return messages
+
