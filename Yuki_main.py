@@ -6,8 +6,11 @@ from default_config import ( #初始人设
     SYSTEM_CONFIG #系统配置
 )
 from Events import Trigger
-from utils import parse_emotion_change
+from utils import parse_emotion_change,build_messages
+from ai_client import AIClient
 
+#AI模块级别初始化
+ai_client = AIClient(mode="local")
 
 # 存档读写
 # 1.加载存档
@@ -138,6 +141,13 @@ def collect_user_information(save_data):
 
 
 # 核心功能函数，生成回复
+def get_yuki_reply(user_input,save_data):
+    messages = build_messages(save_data)
+    messages.append({"role":"user","content":user_input})
+    response = ai_client.chat(messages)
+    return response
+
+
 
 
 #定义聊天主逻辑,核心运行函数
@@ -166,16 +176,15 @@ def chat_with_yuki():
             break
 
         # 3.生成回复和数值变化
-        yuki_response = get_yuki_reply(user_input)
-        reply = yuki_response['reply']
-        aff_change,tru_change = parse_emotion_change(ai_response)
+        yuki_response = get_yuki_reply(user_input,save_data)
+        aff_change,tru_change = parse_emotion_change(yuki_response)
 
         # 4.更新数值
         # 4.1 好感度(数值改变，变化范围)
         save_data["yuki_core"]["stats"]["affection"] += aff_change
         save_data["yuki_core"]["stats"]["affection"] = max(0,min(save_data["yuki_core"]["stats"]["affection"],YUKI_STATS["limit"]["affection_max"]))
         #max(0下限,min(input,limits上限))
-        # 4.2 心情值(0-100)
+        # 4.2 心情值(0-10)
         save_data["yuki_core"]["current_state"]["mood"] += mood_change
         save_data["yuki_core"]["current_state"]["mood"] = max(0,min(save_data["yuki_core"]["stats"]["mood"],100))
         # 4.3 信任值(最大100)
@@ -187,7 +196,7 @@ def chat_with_yuki():
         new_chat = {
             "time":datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "user_input":user_input,
-            "yuki_reply":reply,
+            "yuki_reply":yuki_response,
             "stats_change":{
                 "affection":aff_change,
                 "trust":tru_change
@@ -197,7 +206,7 @@ def chat_with_yuki():
         # 6.更新总聊天次数
         save_data["player_info"]["total_chat_times"] +=1
         # 7.打印Yuki回复
-        print(f'Yuki:{reply}')
+        print(f'Yuki:{yuki_response}')
         print(f"<好感度{aff_change:+d}>,当前好感度:{save_data["yuki_core"]["stats"]["affection"]}")
         print(f"<心情{mood_change:+d}>,当前心情:{save_data["yuki_core"]["current_state"]["mood"]}")
         print(f"<信任度{tru_change:+d}>,当前信任度:{save_data["yuki_core"]["stats"]["trust"]}")
