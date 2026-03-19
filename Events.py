@@ -24,10 +24,79 @@ class Trigger:
     def persona_trigger(self):#人设personality触发
         current_affection = self.save_data["yuki_core"]["stats"]["affection"]
         current_trust = self.save_data["yuki_core"]["stats"]["trust"]
-        for persona in YUKI_CHARACTER["personality"]:
-            if self.save_data["yuki_core"]["basic"]["current_personality"][persona]:
+        trigger_personality = []
+        current_personality = self.save_data["yuki_core"]["basic"]["current_personality"]
+        for persona,conditions in YUKI_STATS["personality_trigger"].items():
+            if self.save_data["yuki_core"]["basic"]["current_personality"].get(persona,False):
                 continue
-            if current_affection
+            #[条件检查],小开关
+            is_match = True
+
+            # 检查下限(affection_min,trust_min)
+            if "affection_min" in conditions:
+                if current_affection < conditions["affection_min"]:
+                    is_match = False
+            if "trust_min" in conditions:
+                if current_trust < conditions["trust_min"]:
+                    is_match = False
+
+            #检查上限
+            if "affection_max" in conditions:
+                if current_affection >= conditions["affection_max"]:
+                    is_match = False
+            if "trust_max" in conditions:
+                if current_trust >= conditions["trust_max"]:
+                    is_match = False
+
+            if is_match:
+                trigger_personality.append(persona)
+
+                # 2. 处理触发逻辑 (互斥核心)
+            new_persona_active = None
+
+            if trigger_personality:
+                # 【优先级策略】：列表中的第一个人设为最高优先级
+                # 如果你的配置字典是无序的，建议在这里根据“稀有度”或“数值要求”排序
+                # 这里简单取第一个匹配到的
+                new_persona_active = trigger_personality[0]
+
+                print(f"✨ 触发新人设：[{new_persona_active}] (好感:{current_affection}, 信任:{current_trust})")
+
+                # 【互斥操作】：关闭所有其他人设
+                for p_key in current_personality.keys():
+                    current_personality[p_key] = False
+
+                # 激活选中的人设
+                current_personality[new_persona_active] = True
+
+            else:
+                # 【保底逻辑】：如果没有触发任何特殊人设
+                # 检查当前是否没有任何人设被激活（包括 default）
+                if not any(current_personality.values()):
+                    # 强制激活 default
+                    current_personality["default"] = True
+                    print("🛡️ 未满足特殊人设条件，重置为 [default] 人设")
+
+                # 如果当前已经是某个特殊人设，但不再满足条件了，要不要切回 default？
+                # 如果需要“一旦触发就永久保留直到满足更低条件”，则不需要下面的逻辑
+                # 如果需要“实时动态切换”，则解开下面注释：
+                """
+                current_active = [k for k, v in current_personality.items() if v and k != 'default']
+                if current_active:
+                    # 曾经激活的特殊人设现在不满足了，切回 default
+                    for p_key in current_personality.keys():
+                        current_personality[p_key] = False
+                    current_personality["default"] = True
+                    print("⚠️ 特殊人设条件不再满足，降级为 [default]")
+                """
+
+            # 3. 更新存档（如果需要立即保存，可以调用 save_save，通常在主循环统一保存）
+            self.save_data["yuki_core"]["basic"]["current_personality"] = current_personality
+
+
+
+
+
 
 
     def diary_leak_trigger(self):#偷看日记事件触发
