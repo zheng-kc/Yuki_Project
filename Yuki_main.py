@@ -149,7 +149,7 @@ def get_yuki_reply(user_input,save_data):
     messages = build_messages(save_data)
     messages.append({"role":"user","content":user_input})
     response = ai_client.chat(messages)
-    return response
+    return response.strip()
 
 
 
@@ -211,10 +211,11 @@ def chat_with_yuki():
         save_data["player_info"]["total_chat_times"] +=1
         # 7.打印Yuki回复
         print(f'Yuki:{yuki_response}')
-        print(f"<好感度{aff_change:+d}>,当前好感度:{save_data["yuki_core"]["stats"]["affection"]}")
+        print(f"<好感度{aff_change:+d}>,当前好感度:{save_data['yuki_core']['stats']['affection']}")
         '''print(f"<心情{mood_change:+d}>,当前心情:{save_data["yuki_core"]["current_state"]["mood"]}")'''
-        print(f"<信任度{tru_change:+d}>,当前信任度:{save_data["yuki_core"]["stats"]["trust"]}")
+        print(f"<信任度{tru_change:+d}>,当前信任度:{save_data['yuki_core']['stats']['trust']}")
 
+        Trigger.persona_trigger(save_data)
         Trigger.event_trigger(save_data)
         # 自动存档
         if SYSTEM_CONFIG["auto_save"]:
