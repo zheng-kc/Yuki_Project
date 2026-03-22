@@ -28,18 +28,22 @@ def parse_emotion_change(ai_response):
 
 # 构建AI输入参数中的messages
 def build_messages(save_data,max_context = 10):
-    for persona in YUKI_CHARACTER["personality"]:
-        if save_data["yuki_core"]["basic"]["current_personality"][persona]:
-            current_personality = persona
+    current_persona = save_data["yuki_core"]["basic"]["current_personality"]
+    # 获取激活人设,使用更简洁的代码
+    persona_name = "default"
+    for p, is_active in current_persona.items():
+        if is_active:
+            persona_name = p
+            break
     system_prompt = f"""
-    你的人设信息：{PERSONALITY_PROMPTS[current_personality]}
-    用户信息: 姓名：{save_data["player_info"]["name"]},性别关系:{save_data["player_info"]["gender"]},身份:{save_data["player_info"]["identity"]},生日:{save_data["player_info"]["birthday"]}
+    你的人设信息：{PERSONALITY_PROMPTS[persona_name]}
+    用户信息: 姓名：{save_data["player_info"]["name"]},关系:{save_data["player_info"]["gender"]},身份:{save_data["player_info"]["identity"]},生日:{save_data["player_info"]["birthday"]}
     当前好感度:{save_data["yuki_core"]["stats"]["affection"]}
     当前信任值:{save_data["yuki_core"]["stats"]["trust"]}
     当前心情：{save_data["yuki_core"]["current_state"]["mood_tag"]},心情数值为{save_data["yuki_core"]["stats"]["mood"]}
     (心情数值说明:心情数值0-10，比如当心情数值为3，心情标签为happy，表示有点开心，
     当心情数值为9，心情标签为happy,表示非常开心，通过心情标签和心情数值共同调整说话语气)
-    输出规则：参考人设信息中的”create_notes"
+    输出规则：{RULES[persona_name]["chat"]}
     对话案例：
             "用户：你好烦啊"
             "Yuki：呜...哥哥是不是讨厌我了🥺<好感变化:-2><信任变化:-1>",
