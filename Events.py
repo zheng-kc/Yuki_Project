@@ -7,7 +7,7 @@ class Trigger:
         self.save_data = save_data
 
     def event_trigger(self):
-        #事件解锁触发
+        #事件解锁触发,STM规则
         # 4.4 事件解锁
         current_affection = self.save_data["yuki_core"]["stats"]["affection"]
         current_trust = self.save_data["yuki_core"]["stats"]["trust"]
@@ -29,7 +29,7 @@ class Trigger:
         for persona,conditions in YUKI_STATS["personality_trigger"].items():
             if self.save_data["yuki_core"]["basic"]["current_personality"].get(persona,False):
                 continue
-            #[条件检查],小开关
+            #[条件检查],小开关,白名单机制
             is_match = True
 
             # 检查下限(affection_min,trust_min)
@@ -58,9 +58,11 @@ class Trigger:
                 # 【优先级策略】：列表中的第一个人设为最高优先级
                 # 如果你的配置字典是无序的，建议在这里根据“稀有度”或“数值要求”排序
                 # 这里简单取第一个匹配到的
+                priority_order = ["disease_prone","dilei","gentle","medium","low","default"]
+                trigger_personality.sort(key=lambda x: priority_order.index(x) if x in priority_order else 999)
                 new_persona_active = trigger_personality[0]
 
-                print(f"✨ 触发新人设：[{new_persona_active}] (好感:{current_affection}, 信任:{current_trust})")
+                print(f"✨ 触发妹妹的新人设：[{new_persona_active}] (好感:{current_affection}, 信任:{current_trust})")
 
                 # 【互斥操作】：关闭所有其他人设
                 for p_key in current_personality.keys():
@@ -75,7 +77,7 @@ class Trigger:
                 if not any(current_personality.values()):
                     # 强制激活 default
                     current_personality["default"] = True
-                    print("🛡️ 未满足特殊人设条件，重置为 [default] 人设")
+                    print("未满足特殊人设条件，重置为 [default] 人设")
 
                 # 如果当前已经是某个特殊人设，但不再满足条件了，要不要切回 default？
                 # 如果需要“一旦触发就永久保留直到满足更低条件”，则不需要下面的逻辑
@@ -90,16 +92,14 @@ class Trigger:
                     print("⚠️ 特殊人设条件不再满足，降级为 [default]")
                 """
 
-            # 3. 更新存档（如果需要立即保存，可以调用 save_save，通常在主循环统一保存）
-            self.save_data["yuki_core"]["basic"]["current_personality"] = current_personality
 
 
 
 
 
 
+    '''def diary_leak_trigger(self):#偷看日记事件触发'''
 
-    def diary_leak_trigger(self):#偷看日记事件触发
 
 
 
