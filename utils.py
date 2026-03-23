@@ -57,7 +57,7 @@ def build_messages(save_data,max_context = 10):
     messages = [
         {"role":"system","content":system_prompt},
 ]
-    chat_history = save_data["interaction"]["chat_history"]
+    chat_history = save_data["interactions"]["chat_history"]
     memory = chat_history[-max_context:] if chat_history else []
     # 将memory加入messages
     for chat in memory:
