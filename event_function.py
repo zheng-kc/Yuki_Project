@@ -3,20 +3,19 @@ from default_config import (PERSONALITY_PROMPTS, RULES)
 
 
 class DiarySystem:
-    def __init__(self, save_data, character_config, ai_client):
+    def __init__(self, save_data,ai_client):
         self.save_data = save_data
-        self.character_config = character_config
         self.today = datetime.datetime.now().strftime("%Y-%m-%d")
         self.ai_client = ai_client
         self.unlock_event_name = "解锁查看<日记>功能"
 
     def check_diary_unlocked(self):
         unlocked_events = self.save_data["yuki_core"]["stats"]["unlocked_events"]
-        return self.unlock_event_name in unlocked_events  # 这个返回True or False，在日记主功能中if判断即可
+        return unlocked_events["解锁查看<日记>功能"]  # 这个返回True or False，在日记主功能中if判断即可
 
     def show_diary(self):
-        if not self.check_diary_unlocked():
-            return "日记功能未解锁"
+        #if not self.check_diary_unlocked():
+            #return "日记功能未解锁"
 
         diary_list = self.save_data["content"]["diary_list"]
         if not diary_list:
@@ -100,8 +99,8 @@ class DiarySystem:
     def save_diary(self):
         """生成并保存日记，重构版"""
         # 1. 前置检查：如果没解锁，直接在这里返回，后面代码都不执行
-        if not self.check_diary_unlocked():
-            return False, "查看日记功能未解锁"
+        #if not self.check_diary_unlocked():
+            #return False, "查看日记功能未解锁"
 
         # 2. 获取或初始化列表
         diary_list = self.save_data["content"].setdefault("diary_list", [])
