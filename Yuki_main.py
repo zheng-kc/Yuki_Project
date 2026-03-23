@@ -7,6 +7,7 @@ from default_config import ( #初始人设
 )
 from Events import Trigger
 from utils import parse_emotion_change,build_messages
+from event_function import DiarySystem
 from ai_client import AIClient
 
 #AI模块级别初始化
@@ -59,7 +60,12 @@ def init_save():
             "stats": {
                 "affection": init_stats["affection"],
                 "trust": init_stats["trust"],
-                "unlocked_events": []
+                "unlocked_events": {
+                    "解锁查看<日记>功能":False,
+                    "diary_leak":False,
+                    "去咖啡厅事件":False,
+                    "去旅游事件":False
+                }
             },
             "current_state": {
                 "mood": init_stats["mood"],
@@ -67,7 +73,7 @@ def init_save():
                 "action_tag": "idle"
             }
         },
-        "interaction": {
+        "interactions": {
             "chat_history": [],
             "date_history": {
                 "cafe": 0,
@@ -160,11 +166,22 @@ def chat_with_yuki():
     #1.加载存档
     save_data = load_save()
 
+    # 初始化日记系统
+    diary_sys = DiarySystem(save_data,ai_client)
+
+
     #检查是否需要采集用户数据
     if not save_data["player_info"]["info_collected"] :
         collect_user_information(save_data)
         #重新加载存档
         save_data = load_save()
+
+    # 检查日记功能
+    if diary_sys.check_diary_unlocked():
+        diary_msg = diary_sys.show_diary()
+        print(diary_msg)
+    else:
+        print("日记功能未解锁")
 
 
     while True:
@@ -176,8 +193,23 @@ def chat_with_yuki():
 
         if user_input == "退出":
             print("Yuki：哥哥下次要早点回来陪我哦～🥺")
+
+            # 用户退出后开始生成日记
+            if diary_sys.check_diary_unlocked():
+                print("正在回忆与哥哥的点点滴滴")
+                is_success,msg = diary_sys.save_diary()
+                if is_success:
+                    print(f'{msg}')
+                else:
+                    print(f'{msg}')
+            else:
+                print("查看日记功能未解锁")
+
+
             save_save(save_data)
             break
+
+
 
         # 3.生成回复和数值变化
         yuki_response = get_yuki_reply(user_input,save_data)
@@ -185,15 +217,18 @@ def chat_with_yuki():
 
         # 4.更新数值
         # 4.1 好感度(数值改变，变化范围)
-        save_data["yuki_core"]["stats"]["affection"] += aff_change
-        save_data["yuki_core"]["stats"]["affection"] = max(0,min(save_data["yuki_core"]["stats"]["affection"],YUKI_STATS["limit"]["affection_max"]))
+        # 将好感度强制转int
+        save_data_affection = int(save_data["yuki_core"]["stats"]["affection"])
+        save_data_affection += aff_change
+        save_data_affection = max(0,min(save_data_affection,int(YUKI_STATS["limit"]["affection_max"])))
         #max(0下限,min(input,limits上限))
         # 4.2 心情值(0-10)
-        '''save_data["yuki_core"]["current_state"]["mood"] += mood_change'''
-        save_data["yuki_core"]["current_state"]["mood"] = max(0,min(save_data["yuki_core"]["stats"]["mood"],100))
+        # save_data["yuki_core"]["current_state"]["mood"] += mood_change
+        # save_data["yuki_core"]["current_state"]["mood"] = max(0,min(save_data["yuki_core"]["stats"]["mood"],100))
         # 4.3 信任值(最大100)
-        save_data['yuki_core']["stats"]["trust"] +=tru_change
-        save_data["yuki_core"]["stats"]["trust"]= min(save_data["yuki_core"]["stats"]["trust"],100)
+        save_data_trust = int(save_data["yuki_core"]["stats"]["trust"])
+        save_data_trust +=tru_change
+        save_data_trust = min(save_data_trust,100)
 
 
         # 5.添加聊天记录到存档
@@ -206,14 +241,14 @@ def chat_with_yuki():
                 "trust":tru_change
             }
         }
-        save_data["interaction"]["chat_history"].append(new_chat)
+        save_data["interactions"]["chat_history"].append(new_chat)
         # 6.更新总聊天次数
         save_data["player_info"]["total_chat_times"] +=1
         # 7.打印Yuki回复
         print(f'Yuki:{yuki_response}')
-        print(f"<好感度{aff_change:+d}>,当前好感度:{save_data['yuki_core']['stats']['affection']}")
+        print(f"<好感度{aff_change:+d}>,当前好感度:{save_data_affection}")
         '''print(f"<心情{mood_change:+d}>,当前心情:{save_data["yuki_core"]["current_state"]["mood"]}")'''
-        print(f"<信任度{tru_change:+d}>,当前信任度:{save_data['yuki_core']['stats']['trust']}")
+        print(f"<信任度{tru_change:+d}>,当前信任度:{save_data_trust}")
 
         Trigger.persona_trigger(save_data)
         Trigger.event_trigger(save_data)
