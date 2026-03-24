@@ -2,6 +2,7 @@ import requests
 from dotenv import load_dotenv
 import os
 from openai import OpenAI,APIError,APITimeoutError
+import re
 
 # 初始化设置
 # 1.加载环境变量
@@ -37,6 +38,16 @@ class AIClient:
         self.mode = mode
         return f"已切换到{'本地模式' if mode == 'local' else '线上模式'}"
 
+    # 使用正则化去除<think>,</think>字段,非流式处理
+    def clean_think_tags(self,text : str) -> str:
+        # 内部辅助方法：去除 think 标签
+        if not text:
+            return ""
+        # 使用非贪婪匹配去除 <think>...</think>
+        pattern = r"<think>.*?</think>"
+        cleaned = re.sub(pattern, "", text, flags=re.DOTALL | re.IGNORECASE)
+        return cleaned.strip()
+
     def chat(self,messages,model = None, stream = False):
         """聊天接口统一"""
         client = self.local_client if self.mode == "local" else self.online_client
@@ -49,16 +60,38 @@ class AIClient:
                 stream = stream,
                 temperature = 0.7
             )
-
             # 流式处理,实现打字机效果
             if stream:
                 def stream_gen():# 定义生成器函数
+                    in_think_block = False
                     for chunk in response:
-                        if chunk.choice[0].delta.content:
-                            yield chunk.choice[0].delta.content
+                        content = None
+
+                        if hasattr(chunk, 'choices') and len(chunk.choices) > 0:
+                            if hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
+                                content = chunk.choices[0].delta.content
+                        if not content:
+                            continue
+
+                        if "<think>" in content:
+                            in_think_block = True
+                            content = content.split("<think>")[0]
+
+                        if in_think_block:
+                            # 检查是否结束思考
+                            if "</think>" in content:
+                                in_think_block = False
+                                # 截取 </think> 之后的内容
+                                content = content.split("</think>")[-1]
+                            else:
+                                # 还在思考中，直接丢弃整个 chunk
+                                continue
+                            if content and content.strip():
+                                yield content
+
                 return stream_gen()
             else:
-                return response.choices[0].message.content
+                return self.clean_think_tags(response.choices[0].message.content)
 
         except APITimeoutError:
             return "请求超时"
