@@ -50,7 +50,7 @@ class DiarySystem:
         用户信息: 姓名：{self.save_data["player_info"]["name"]},关系:{self.save_data["player_info"]["gender"]},身份:{self.save_data["player_info"]["identity"]},生日:{self.save_data["player_info"]["birthday"]}
         当前好感度:{self.save_data["yuki_core"]["stats"]["affection"]}
         当前信任值:{self.save_data["yuki_core"]["stats"]["trust"]}
-        输出规则:{RULES[persona_name]["diary_rules"]}
+        输出规则:{RULES[persona_name]["diary"]}
         你是Yuki，请根据你的人设，当前好感度，当前信任值，输出一篇妹妹第一人称视角下的日记,字数在500字左右
         日记风格要符合你的人设，体现当下的情绪。
         不要出现'聊天记录'、'对话'等打破第四面墙的词汇，要像是在私下记录心事。
