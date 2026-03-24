@@ -40,7 +40,7 @@ def init_save():
         },
         "player_info": {
             "name": "哥哥",
-            "gender":"brother",
+            "gender":"哥哥",
             "identity": "医学生",
             "birthday": "02-12",
             "total_chat_times": 0,
@@ -68,8 +68,7 @@ def init_save():
                 }
             },
             "current_state": {
-                "mood": init_stats["mood"],
-                "mood_tag": "happy",
+                "current_mood": "happy",
                 "action_tag": "idle"
             }
         },
@@ -122,10 +121,10 @@ def collect_user_information(save_data):
             break
         print("名字不能为空")
     while True:
-        user_info_gender=input("请输入你的性别：brother or sister").strip().lower()
-        if user_info_gender in ["brother","sister"]:
+        user_info_gender=input("请输入你的性别：哥哥还是姐姐").strip().lower()
+        if user_info_gender in ["哥哥","姐姐"]:
             break
-        print("输入错误，只能输入brother或sister")
+        print("输入错误，只能输入哥哥或姐姐")
 
     while True:
         user_info_identity = input("请输入你的身份(比如医学生，程序员等)").strip()
@@ -213,7 +212,7 @@ def chat_with_yuki():
 
         # 3.生成回复和数值变化
         yuki_response = get_yuki_reply(user_input,save_data)
-        aff_change,tru_change = parse_emotion_change(yuki_response)
+        aff_change,tru_change,current_mood = parse_emotion_change(yuki_response)
 
         # 4.更新数值
         # 4.1 好感度(数值改变，变化范围)
@@ -222,13 +221,13 @@ def chat_with_yuki():
         save_data_affection += aff_change
         save_data_affection = max(0,min(save_data_affection,int(YUKI_STATS["limit"]["affection_max"])))
         #max(0下限,min(input,limits上限))
-        # 4.2 心情值(0-10)
-        # save_data["yuki_core"]["current_state"]["mood"] += mood_change
-        # save_data["yuki_core"]["current_state"]["mood"] = max(0,min(save_data["yuki_core"]["stats"]["mood"],100))
-        # 4.3 信任值(最大100)
+        # 4.2 信任值(最大100)
         save_data_trust = int(save_data["yuki_core"]["stats"]["trust"])
         save_data_trust +=tru_change
         save_data_trust = min(save_data_trust,100)
+
+        current_mood = str(current_mood)
+        save_data["yuki_core"]["current_state"]["current_mood"] = current_mood
 
 
         # 5.添加聊天记录到存档
@@ -247,7 +246,7 @@ def chat_with_yuki():
         # 7.打印Yuki回复
         print(f'Yuki:{yuki_response}')
         print(f"<好感度{aff_change:+d}>,当前好感度:{save_data_affection}")
-        '''print(f"<心情{mood_change:+d}>,当前心情:{save_data["yuki_core"]["current_state"]["mood"]}")'''
+        print(f"当前心情:{current_mood}")
         print(f"<信任度{tru_change:+d}>,当前信任度:{save_data_trust}")
 
         Trigger.persona_trigger(save_data)
