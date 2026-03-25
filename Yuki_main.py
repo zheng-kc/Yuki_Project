@@ -6,12 +6,16 @@ from default_config import ( #初始人设
     SYSTEM_CONFIG #系统配置
 )
 from Events import Trigger
-from utils import parse_emotion_change,build_messages
+from utils import parse_emotion_change,build_messages,calculate_total_play_time
 from event_function import DiarySystem
 from ai_client import AIClient
 
 #AI模块级别初始化
-ai_client = AIClient(mode="local")
+ai_client = AIClient(mode="online")
+
+#调用实例
+
+
 
 # 存档读写
 # 1.加载存档
@@ -63,8 +67,8 @@ def init_save():
                 "unlocked_events": {
                     "解锁查看<日记>功能":False,
                     "diary_leak":False,
-                    "去咖啡厅事件":False,
-                    "去旅游事件":False
+                    "解锁<去咖啡馆>事件":False,
+                    "解锁<去旅游>事件":False
                 }
             },
             "current_state": {
@@ -106,6 +110,8 @@ def save_save(save_data):
         save_data["meta_info"] = {}
     save_data["meta_info"]["last_save_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     save_data["meta_info"]["save_times"] = save_data["meta_info"].get("save_times", 0) + 1
+    # 计算并更新总游戏时间
+    save_data["meta_info"]["total_play_time"] = calculate_total_play_time(save_data)
 
     # 写入文件
     with open(save_path, "w", encoding="utf-8") as f:
@@ -249,8 +255,12 @@ def chat_with_yuki():
         print(f"当前心情:{current_mood}")
         print(f"<信任度{tru_change:+d}>,当前信任度:{save_data_trust}")
 
-        Trigger.persona_trigger(save_data)
-        Trigger.event_trigger(save_data)
+       
+        # 调用实例方法
+         # 创建 Trigger 实例
+        trigger = Trigger(save_data)
+        trigger.persona_trigger()
+        trigger.event_trigger()
         # 自动存档
         if SYSTEM_CONFIG["auto_save"]:
             save_save(save_data)
@@ -258,6 +268,4 @@ def chat_with_yuki():
 # 测试：加载初始存档
 if __name__ == "__main__":
     save_data = load_save()
-    current_affection = save_data["yuki_core"]["stats"]["affection"]
-    print(f'Yuki current affection:{current_affection}')
     chat_with_yuki()
