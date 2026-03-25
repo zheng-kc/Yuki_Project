@@ -17,16 +17,16 @@ class AIClient:
     def __init__(self,mode="local"):
         self.mode = mode
         #线上API调用
-        self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+        self.deepseek_api_key = os.getenv("OPENAI_API_KEY")
         self.online_client = OpenAI(
             api_key = self.deepseek_api_key,
-            base_url = "https://api.deepseek.com",
+            base_url = "https://api.deepseek.com/v1",
             timeout = 60
         ) if self.deepseek_api_key else None
         # 本地大模型调用(复用Openai的SDK)
         self.local_client = OpenAI(
             api_key = "ollama",
-            base_url = "http://localhost/11434/v1",
+            base_url = "http://localhost:11434/v1",
             timeout = 120
         )
 
