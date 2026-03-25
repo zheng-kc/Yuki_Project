@@ -3,6 +3,7 @@ from default_config import *
 #解析函数，从AI输出内容提取好感和信任值变化值，使用正则表达式
 
 import re
+import datetime
 
 def parse_emotion_change(ai_response):
     #解析AI回复里的<好感变化:+X><信任变化:+Y><当前心情:[Z]>,返回(好感变化值，信任变化值),当前心情标签
@@ -71,4 +72,36 @@ def build_messages(save_data,max_context = 10):
         messages.append({"role":"user","content":user_msg})
         messages.append({"role":"assistant","content":yuki_msg})
     return messages
+
+
+# 计时功能
+def calculate_total_play_time(save_data):
+    # 根据聊天历史计算总游戏时间，返回格式:"X小时Y分钟"
+    chat_history = save_data.get("interactions",{}).get("chat_history",[])
+
+    #如果没有聊天记录，返回0小时0分钟
+    if not chat_history:
+        return "0小时0分钟"
+    try:
+        # 获取第一条和最后一条聊天记录的时间
+        first_time_str = chat_history[0]["time"]
+        last_time_str = chat_history[-1]["time"]
+
+        # 转换为datetime对象
+        first_time = datetime.datetime.strptime(first_time_str,"%Y-%m-%d %H:%M:%S")
+        last_time = datetime.datetime.strptime(first_time_str,"%Y-%m-%d %H:%M:%S")
+
+        # 计算时间差
+        time_diff = last_time - first_time
+
+        #转换为分钟
+        total_minutes = int(time_diff.total_seconds()/60)
+
+        # 计算小时和分钟
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+
+        return f"{hours}小时{minutes}分钟"
+    except (KeyError, ValueError, IndexError):
+        return "计时失效，重置为0小时0分钟"
 
