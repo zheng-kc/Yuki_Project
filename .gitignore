@@ -9,7 +9,7 @@ __pycache__/
 venv/
 env/
 .venv/
-env/
+.env
 conda-env/
 *.log
 *.tmp
